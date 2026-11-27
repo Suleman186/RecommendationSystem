@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NETFLIX Recommendation System</title>
+<style>
+:root{--bg:#141414;--bg2:#181818;--red:#e50914;--tx:#fff;--mut:#b3b3b3;--card:#2a2a2a;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--tx);font-family:"Helvetica Neue",Helvetica,Arial,sans-serif}
+button,input,textarea{font:inherit}
+nav{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;gap:22px;padding:calc(14px + env(safe-area-inset-top,0px)) 4% 14px;background:linear-gradient(#000c,#0000);transition:background .3s}
+nav.solid{background:#141414}
+.logo{color:var(--red);font-weight:900;font-size:28px;letter-spacing:2px;cursor:pointer}
+nav a{color:#e5e5e5;font-size:14px;cursor:pointer;background:none;border:0}
+nav a:hover,nav a.on{color:#fff;font-weight:700}
+.sp{flex:1}
+.search{display:flex;align-items:center;border:1px solid transparent;padding:4px 8px;gap:6px}
+.search.open{border-color:#fff;background:#000a}
+.search input{width:0;background:none;border:0;color:#fff;outline:0;transition:width .3s}
+.search.open input{width:200px}
+.hero{min-height:78vh;display:flex;align-items:flex-end;padding:0 4% 9vh;position:relative;background:radial-gradient(ellipse at 75% 20%,var(--h1,#7a0f14) 0,transparent 60%),linear-gradient(120deg,var(--h2,#1b1b2f),#141414)}
+.hero:after{content:"";position:absolute;inset:auto 0 0;height:30%;background:linear-gradient(transparent,var(--bg))}
+.hero>div{position:relative;z-index:2;max-width:620px}
+.hero .tag{font-weight:700;color:var(--red);font-size:14px;letter-spacing:3px;margin-bottom:10px}
+.hero h1{font-size:clamp(42px,8vw,86px);margin:0 0 14px;line-height:1;font-weight:900}
+.hero p{font-size:clamp(15px,2vw,20px);color:#ddd;margin:0 0 22px;text-shadow:0 2px 4px #000}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 26px;border-radius:4px;border:0;font-weight:700;font-size:17px;cursor:pointer;margin-right:10px;margin-bottom:8px}
+.btn.w{background:#fff;color:#000}.btn.w:hover{background:#ffffffb3}
+.btn.g{background:#6d6d6eb3;color:#fff}.btn.g:hover{background:#6d6d6e66}
+.row{padding:0 4%;margin:-4vh 0 3vh;position:relative;z-index:3}
+.row h2{font-size:20px;margin:0 0 10px;font-weight:700}
+.scroller{display:flex;gap:6px;overflow-x:auto;padding:30px 0 30px;margin:-30px 0;scrollbar-width:none}
+.scroller::-webkit-scrollbar{display:none}
+.card{flex:0 0 auto;width:clamp(125px,13vw,185px);aspect-ratio:2/3;border-radius:4px;position:relative;cursor:pointer;overflow:hidden;transition:transform .25s,box-shadow .25s;display:flex;flex-direction:column;justify-content:flex-end;padding:12px}
+.card:hover{transform:scale(1.18);z-index:5;box-shadow:0 10px 30px #000}
+.card b{font-size:17px;line-height:1.1;text-shadow:0 2px 6px #000a}
+.card small{color:#ddd;font-size:11px;margin-top:4px}
+.card .rt{position:absolute;top:8px;right:8px;background:#000a;padding:2px 6px;border-radius:3px;font-size:11px;font-weight:700;color:#46d369}
+.rank{position:absolute;top:6px;left:10px;font-size:34px;font-weight:900;color:#ffffffcc;-webkit-text-stroke:1px #000}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px;padding:110px 4% 40px}
+.grid .card{width:auto}.grid .card:hover{transform:scale(1.06)}
+.pad{padding:110px 4% 40px}
+.pad h1{margin:0 0 6px}
+.hist li{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #333;list-style:none}
+.hist{padding:0;max-width:700px}
+.n{color:var(--red);font-weight:900;width:28px}
+.modal{position:fixed;inset:0;z-index:50;background:#000b;display:none;overflow-y:auto;padding:4vh 3%}
+.modal.show{display:block}
+.box{max-width:820px;margin:0 auto;background:var(--bg2);border-radius:8px;overflow:hidden;box-shadow:0 0 40px #000}
+.mh{height:clamp(220px,40vh,360px);position:relative;display:flex;align-items:flex-end;padding:24px}
+.mh:after{content:"";position:absolute;inset:auto 0 0;height:60%;background:linear-gradient(transparent,var(--bg2))}
+.mh>*{position:relative;z-index:2}
+.mh h2{font-size:clamp(30px,5vw,48px);margin:0;font-weight:900}
+.x{position:absolute;top:12px;right:12px;z-index:3;background:#181818;border:0;color:#fff;width:36px;height:36px;border-radius:50%;font-size:20px;cursor:pointer}
+.mb{padding:0 24px 28px}
+.meta{display:flex;gap:14px;align-items:center;color:var(--mut);margin:6px 0 14px}
+.meta .m{color:#46d369;font-weight:700}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 18px}
+.tags span{background:#333;padding:3px 10px;border-radius:20px;font-size:12px;color:#ddd}
+.mb h3{margin:22px 0 10px}
+.rec{display:flex;gap:14px;background:var(--card);border-radius:4px;padding:12px;margin-bottom:8px;cursor:pointer;align-items:center}
+.rec:hover{background:#333}
+.thumb{width:64px;aspect-ratio:2/3;border-radius:3px;flex:0 0 auto}
+.card,.mh,.thumb,.hp{background-size:cover!important;background-position:center top!important}
+.card:before{content:"";position:absolute;inset:45% 0 0;background:linear-gradient(transparent,#000e)}
+.card b,.card small{position:relative}
+.hero>.hp{position:absolute;right:8%;bottom:12vh;width:clamp(150px,20vw,260px);aspect-ratio:2/3;border-radius:6px;box-shadow:0 20px 60px #000;z-index:2;max-width:none}
+@media(max-width:700px){.hero>.hp{display:none}}
+.rec div b{display:block}.rec div small{color:var(--mut)}
+.sc{margin-left:auto;text-align:right;color:#46d369;font-weight:700;font-size:13px;white-space:nowrap}
+label{display:block;margin:12px 0 4px;color:var(--mut);font-size:13px}
+.in{width:100%;padding:11px;background:#333;border:1px solid #444;border-radius:4px;color:#fff;outline:0}
+.in:focus{border-color:#fff}
+#toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom,0px));transform:translate(-50%,100px);background:#fff;color:#000;padding:12px 22px;border-radius:4px;font-weight:700;z-index:99;transition:transform .3s;max-width:90%}
+#toast.show{transform:translate(-50%,0)}
+#toast.err{background:var(--red);color:#fff}
+.empty{color:var(--mut);padding:20px 0}
+footer{padding:30px 4% 50px;color:#757575;font-size:13px}
+@media(max-width:700px){nav{gap:12px;flex-wrap:wrap}.logo{font-size:22px}.search.open input{width:110px}}
+:focus-visible{outline:2px solid #fff;outline-offset:2px}
+</style>
+</head>
+<body>
+<nav id="nav">
+  <span class="logo" onclick="go('home')">NETFLIX</span>
+  <a data-v="home" class="on" onclick="go('home')">Home</a>
+  <a data-v="all" onclick="go('all')">All Movies</a>
+  <a data-v="top" onclick="go('top')">Top Rated</a>
+  <a data-v="history" onclick="go('history')">Watch History</a>
+  <span class="sp"></span>
+  <div class="search" id="sb">
+    <button style="background:none;border:0;color:#fff;cursor:pointer;font-size:18px" onclick="toggleSearch()" aria-label="Search">&#128269;</button>
+    <input id="q" placeholder="Titles, genres, keywords" oninput="doSearch()">
+  </div>
+  <a onclick="openAdd()">+ Add Movie</a>
+  <a onclick="saveMovies()">Save</a>
+  <a onclick="loadMovies()">Load</a>
+</nav>
+
+<main id="app"></main>
+<footer>NETFLIX Recommendation System &middot; DSA Project &middot; vector, unordered_map, unordered_set, queue</footer>
+
+<div class="modal" id="modal" onclick="if(event.target===this)closeModal()"><div class="box" id="box"></div></div>
+<div id="toast"></div>
+<input type="file" id="file" accept=".txt" hidden>
+
+<script>
+/* ===== Data layer: direct port of NetflixSystem.cpp ===== */
+const SAMPLE=[
+ {id:1,title:"Interstellar",genre:"Sci-Fi",description:"space time travel science",rating:8.7},
+ {id:2,title:"Inception",genre:"Sci-Fi",description:"dreams mind science thriller",rating:8.8},
+ {id:3,title:"Tenet",genre:"Sci-Fi",description:"time travel action thriller",rating:7.8},
+ {id:4,title:"The Matrix",genre:"Sci-Fi",description:"science technology artificial intelligence",rating:8.7},
+ {id:5,title:"The Dark Knight",genre:"Action",description:"batman crime joker action",rating:9.0},
+ {id:6,title:"Iron Man",genre:"Action",description:"technology superhero armor action",rating:7.9},
+ {id:7,title:"Avengers",genre:"Action",description:"superhero battle universe action",rating:8.0}
+];
+let movies=SAMPLE.map(m=>({...m}));
+let movieIndex=new Map();            // unordered_map<int,int>
+let watchHistory=[];                 // queue<string> (push back, read from front)
+function rebuildIndex(){movieIndex.clear();movies.forEach((m,i)=>movieIndex.set(m.id,i));}
+const words=s=>new Set(s.split(/\s+/).filter(Boolean).map(w=>w.toLowerCase())); // unordered_set<string>
+function calculateSimilarity(a,b){
+  let score=0;
+  if(a.genre===b.genre)score+=3;
+  const A=words(a.description),B=words(b.description);
+  for(const w of A)if(B.has(w))score++;
+  return score;
+}
+function recommend(id){
+  if(!movieIndex.has(id))return null;
+  const idx=movieIndex.get(id),recs=[];
+  movies.forEach((m,i)=>{if(i!==idx)recs.push([i,calculateSimilarity(movies[idx],m)]);});
+  recs.sort((a,b)=>a[1]===b[1]?a[0]-b[0]:b[1]-a[1]);
+  return recs.filter(r=>r[1]>0).slice(0,3).map(r=>({movie:movies[r[0]],score:r[1]}));
+}
+const sortedByRating=()=>[...movies].sort((a,b)=>b.rating-a.rating);
+
+/* ===== UI helpers ===== */
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const PAL={"Sci-Fi":[210,70],"Action":[8,75],"Drama":[270,50],"Comedy":[45,85],"Horror":[0,0],"Romance":[330,60],"Thriller":[190,60],"Animation":[130,55]};
+function hue(m){
+  if(PAL[m.genre])return PAL[m.genre][0];
+  let h=0;for(const c of m.genre)h=(h*31+c.charCodeAt(0))%360;return h;
+}
+/* ===== Poster art: hand-built SVG, one per sample movie + generated art for new ones ===== */
+const STARS=n=>{let s='';for(let i=0;i<n;i++){const x=(i*73+11)%200,y=(i*131+7)%300,r=((i*7)%3+4)/6;s+=`<circle cx="${x}" cy="${y}" r="${r}" fill="#fff" opacity="${.3+(i%5)/8}"/>`;}return s;};
+const ART={
+interstellar:()=>`<defs><radialGradient id="g"><stop offset=".55" stop-color="#ffe2a8"/><stop offset=".72" stop-color="#e8751a" stop-opacity=".8"/><stop offset="1" stop-color="#e8751a" stop-opacity="0"/></radialGradient><linearGradient id="p" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#2b4a6b"/><stop offset="1" stop-color="#08121f"/></linearGradient></defs><rect width="200" height="300" fill="#03040b"/>${STARS(60)}<ellipse cx="100" cy="125" rx="112" ry="26" fill="url(#g)"/><circle cx="100" cy="125" r="30" fill="#000"/><ellipse cx="100" cy="125" rx="36" ry="36" fill="none" stroke="#ffd79a" stroke-width="3" opacity=".85"/><ellipse cx="100" cy="340" rx="190" ry="90" fill="url(#p)"/><path d="M96 238l4-14 4 14-2 8h-4z" fill="#e9eef5"/>`,
+inception:()=>{let b='';[[14,60],[40,95],[62,50],[84,120],[110,70],[134,100],[156,55]].forEach(([x,h])=>b+=`<rect x="${x}" y="${-h}" width="20" height="${h}" fill="#cfe0ee" opacity=".85"/>`);return `<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#0b1722"/><stop offset="1" stop-color="#4c7090"/></linearGradient></defs><rect width="200" height="300" fill="url(#g)"/><g transform="translate(100 190) rotate(-32)">${b}</g><g transform="translate(100 110) rotate(32) scale(1 -1)" opacity=".7">${b}</g><ellipse cx="100" cy="246" rx="20" ry="5" fill="#000" opacity=".5"/><path d="M100 214l11 28h-22z" fill="#d9dee6"/><path d="M100 214l-3-12h6z" fill="#fff"/>`;},
+tenet:()=>`<rect width="100" height="300" fill="#a31621"/><rect x="100" width="100" height="300" fill="#1c4fbf"/><g fill="none" stroke="#fff" stroke-width="2" opacity=".85"><circle cx="100" cy="130" r="26"/><circle cx="100" cy="130" r="46"/><circle cx="100" cy="130" r="66"/></g><rect x="98" width="4" height="300" fill="#fff"/><path d="M20 235h60l-14-12m14 12l-14 12" stroke="#fff" stroke-width="4" fill="none"/><path d="M180 235h-60l14-12m-14 12l14 12" stroke="#fff" stroke-width="4" fill="none"/><path d="M10 40L90 40M110 40L190 40" stroke="#fff" stroke-width="2" opacity=".5"/>`,
+matrix:()=>{let c='';for(let i=0;i<14;i++){const x=8+i*14,y=((i*53)%120)-60,l=120+(i*37)%160;c+=`<line x1="${x}" y1="${y}" x2="${x}" y2="${y+l}" stroke="#27ff6b" stroke-width="7" stroke-dasharray="2 6" opacity="${.35+(i%4)*.18}"/><line x1="${x}" y1="${y+l-8}" x2="${x}" y2="${y+l}" stroke="#d6ffe2" stroke-width="7" stroke-dasharray="2 6"/>`;}return `<rect width="200" height="300" fill="#010a04"/>${c}<path d="M42 110l52 4-4 28-40-2zM106 114l52-4 -2 28-40 6z" fill="#000" stroke="#27ff6b" stroke-width="2"/><path d="M52 118l24 2M118 120l24-2" stroke="#27ff6b" stroke-width="2" opacity=".7"/>`;},
+darkknight:()=>`<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#0a0e17"/><stop offset="1" stop-color="#2b3647"/></linearGradient><radialGradient id="m"><stop offset=".6" stop-color="#fff3b8"/><stop offset="1" stop-color="#fff3b8" stop-opacity="0"/></radialGradient></defs><rect width="200" height="300" fill="url(#g)"/><circle cx="100" cy="95" r="85" fill="url(#m)" opacity=".6"/><circle cx="100" cy="95" r="52" fill="#f6e9a6"/><path d="M100 82l-9-9-15 4-13-8 2 18 10 8 16-2 5 8 4-5 4 5 5-8 16 2 10-8 2-18-13 8-15-4z" fill="#0b0b0f"/><path d="M0 300V215h22v-30h26v40h18v-60h30v50h20v-35h28v45h20v-25h28v140z" fill="#05070b"/>`,
+ironman:()=>`<defs><radialGradient id="r"><stop offset="0" stop-color="#fff"/><stop offset=".35" stop-color="#9defff"/><stop offset="1" stop-color="#9defff" stop-opacity="0"/></radialGradient><linearGradient id="b" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#8e1117"/><stop offset="1" stop-color="#2a0507"/></linearGradient><linearGradient id="y" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f6c945"/><stop offset="1" stop-color="#a8741a"/></linearGradient></defs><rect width="200" height="300" fill="url(#b)"/><rect y="205" width="200" height="95" fill="url(#y)" opacity=".9"/><circle cx="100" cy="125" r="85" fill="url(#r)" opacity=".7"/><circle cx="100" cy="125" r="56" fill="#0d1a1f" stroke="#bff6ff" stroke-width="4"/><circle cx="100" cy="125" r="40" fill="none" stroke="#bff6ff" stroke-width="3" stroke-dasharray="10 6"/><path d="M100 98l24 42h-48z" fill="#e8fdff"/>`,
+avengers:()=>`<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0d2b66"/><stop offset="1" stop-color="#8a0f1a"/></linearGradient></defs><rect width="200" height="300" fill="url(#g)"/><g stroke="#fff" stroke-width="1.5" opacity=".25">${[...Array(12)].map((_,i)=>{const a=i*Math.PI/6;return `<line x1="100" y1="125" x2="${100+300*Math.cos(a)}" y2="${125+300*Math.sin(a)}"/>`;}).join('')}</g><circle cx="100" cy="125" r="78" fill="#0a1a40" stroke="#e8c15a" stroke-width="5"/><circle cx="100" cy="125" r="68" fill="none" stroke="#fff" stroke-width="2"/><polygon points="100,63 114.7,104.8 158.96,105.84 123.8,132.7 136.5,175.2 100,150 63.5,175.2 76.2,132.7 41.04,105.84 85.3,104.8" fill="#f4f4f4"/><rect y="240" width="200" height="60" fill="#000" opacity=".35"/>`
+};
+function genArt(m){
+  const h=hue(m),g=(m.genre||'').toLowerCase();let s='';
+  for(let i=0;i<5;i++)s+=`<circle cx="${(m.id*37+i*53)%200}" cy="${(m.id*19+i*71)%240}" r="${30+((m.id+i)*13)%50}" fill="hsl(${(h+i*25)%360},70%,${45+i*5}%)" opacity=".22"/>`;
+  let icon=`<circle cx="100" cy="120" r="34" fill="none" stroke="#fff" stroke-width="3" opacity=".8"/><path d="M88 105l30 15-30 15z" fill="#fff" opacity=".9"/>`;
+  if(/horror/.test(g))icon=`<path d="M100 70c-26 0-40 20-40 44v38l12-8 10 10 8-10 10 10 10-10 8 10 10-10 12 8v-38c0-24-14-44-40-44z" fill="#fff" opacity=".9"/><circle cx="86" cy="112" r="7"/><circle cx="114" cy="112" r="7"/>`;
+  else if(/romance|love/.test(g))icon=`<path d="M100 160C50 120 60 76 86 76c10 0 14 6 14 6s4-6 14-6c26 0 36 44-14 84z" fill="#fff" opacity=".9"/>`;
+  else if(/comedy/.test(g))icon=`<circle cx="100" cy="120" r="42" fill="#ffd54a"/><circle cx="86" cy="108" r="5"/><circle cx="114" cy="108" r="5"/><path d="M80 128q20 26 40 0" stroke="#000" stroke-width="4" fill="none"/>`;
+  else if(/animation|family|kids/.test(g))icon=`<polygon points="100,72 112,104 146,106 119,126 129,158 100,139 71,158 81,126 54,106 88,104" fill="#fff" opacity=".9"/>`;
+  return `<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="hsl(${h},60%,26%)"/><stop offset="1" stop-color="hsl(${(h+50)%360},50%,8%)"/></linearGradient></defs><rect width="200" height="300" fill="url(#g)"/>${s}${icon}`;
+}
+const posterCache=new Map();
+function bg(m){
+  const key=m.title.toLowerCase().replace(/^the /,'').replace(/[^a-z]/g,'')+'|'+m.id+'|'+m.genre;
+  if(!posterCache.has(key)){
+    const t=m.title.toLowerCase().replace(/^the /,'').replace(/[^a-z]/g,'');
+    const art=(ART[t]||(()=>genArt(m)))();
+    const svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 300" preserveAspectRatio="xMidYMid slice">${art}</svg>`;
+    posterCache.set(key,`url('data:image/svg+xml;utf8,${encodeURIComponent(svg).replace(/'/g,'%27')}')`);
+  }
+  return posterCache.get(key);
+}
+function toast(t,err){const e=$("toast");e.textContent=t;e.className="show"+(err?" err":"");clearTimeout(toast.t);toast.t=setTimeout(()=>e.className="",2600);}
+function card(m,rank){
+  return `<div class="card" style="background:${bg(m)}" onclick="openMovie(${m.id})" tabindex="0" onkeydown="if(event.key==='Enter')openMovie(${m.id})">
+   ${rank?`<span class="rank">${rank}</span>`:""}<span class="rt">${m.rating.toFixed(1)}</span>
+   <b>${esc(m.title)}</b><small>${esc(m.genre)}</small></div>`;
+}
+function rowOf(title,list,ranked){
+  if(!list.length)return "";
+  return `<section class="row"><h2>${esc(title)}</h2><div class="scroller">${list.map((m,i)=>card(m,ranked?i+1:0)).join("")}</div></section>`;
+}
+
+/* ===== Views ===== */
+let view="home",heroId=null;
+function go(v){
+  view=v;$("q").value="";$("sb").classList.remove("open");
+  document.querySelectorAll("nav a[data-v]").forEach(a=>a.classList.toggle("on",a.dataset.v===v));
+  render();scrollTo(0,0);
+}
+function render(){
+  const app=$("app");
+  if(view==="home"){
+    if(!movies.length){app.innerHTML=`<div class="pad"><h1>No movies available.</h1><p class="empty">Add a movie or load a saved database.</p></div>`;return;}
+    const top=sortedByRating();
+    const h=movies.find(m=>m.id===heroId)||top[0];heroId=h.id;
+    const genres=[...new Set(movies.map(m=>m.genre))];
+    app.innerHTML=`<header class="hero" style="--h1:hsl(${hue(h)},70%,22%);--h2:hsl(${(hue(h)+50)%360},40%,10%)">
+      <div class="hp" style="background:${bg(h)}"></div><div><div class="tag">${esc(h.genre).toUpperCase()}</div><h1>${esc(h.title)}</h1>
+      <p>${esc(h.description)} &middot; <b style="color:#46d369">${(h.rating*10).toFixed(0)}% Match</b></p>
+      <button class="btn w" onclick="watch(${h.id})">&#9654; Play</button>
+      <button class="btn g" onclick="openMovie(${h.id})">&#9432; More Info</button></div></header>`
+      +rowOf("Top Rated on Netflix",top,true)
+      +genres.map(g=>rowOf(g+" Movies",movies.filter(m=>m.genre===g))).join("")
+      +rowOf("Continue Watching",[...new Set(watchHistory)].reverse().map(t=>movies.find(m=>m.title===t)).filter(Boolean));
+  }else if(view==="all"){
+    app.innerHTML=movies.length?`<div class="grid">${movies.map(m=>card(m)).join("")}</div>`:`<div class="pad"><h1>No movies available.</h1></div>`;
+  }else if(view==="top"){
+    app.innerHTML=`<div class="pad"><h1>Top Rated Movies</h1><p class="empty">Sorted by rating, highest first.</p></div><div class="grid" style="padding-top:0">${sortedByRating().map((m,i)=>card(m,i+1)).join("")}</div>`;
+  }else if(view==="history"){
+    app.innerHTML=`<div class="pad"><h1>Watch History</h1>`+(watchHistory.length?
+      `<ul class="hist">${watchHistory.map((t,i)=>`<li><span class="n">${i+1}</span>${esc(t)}</li>`).join("")}</ul>`
+      :`<p class="empty">Watch history is empty. Press Play on any title.</p>`)+`</div>`;
+  }else if(view==="search"){
+    const q=$("q").value.trim().toLowerCase();
+    const r=movies.filter(m=>[m.title,m.genre,m.description].some(s=>s.toLowerCase().includes(q)));
+    app.innerHTML=`<div class="pad"><h1>Results for "${esc($("q").value.trim())}"</h1>${r.length?"":`<p class="empty">Movie not found!</p>`}</div>`+(r.length?`<div class="grid" style="padding-top:0">${r.map(m=>card(m)).join("")}</div>`:"");
+  }
+}
+function toggleSearch(){const s=$("sb");s.classList.toggle("open");if(s.classList.contains("open"))$("q").focus();else go("home");}
+function doSearch(){
+  if(!$("q").value.trim()){view="home";render();return;}
+  view="search";render();
+}
+
+/* ===== Modals ===== */
+function closeModal(){$("modal").classList.remove("show");document.body.style.overflow="";}
+function showModal(h){$("box").innerHTML=h;$("modal").classList.add("show");$("modal").scrollTop=0;document.body.style.overflow="hidden";}
+function openMovie(id){
+  const m=movies[movieIndex.get(id)];if(!m)return;
+  const recs=recommend(id)||[];
+  showModal(`<div class="mh" style="background:${bg(m)}"><button class="x" onclick="closeModal()" aria-label="Close">&times;</button><h2>${esc(m.title)}</h2></div>
+  <div class="mb"><div class="meta"><span class="m">${(m.rating*10).toFixed(0)}% Match</span><span>${m.rating.toFixed(1)} / 10</span><span>${esc(m.genre)}</span><span>ID ${m.id}</span></div>
+  <button class="btn w" onclick="watch(${m.id})">&#9654; Play</button>
+  <div class="tags">${m.description.split(/\s+/).filter(Boolean).map(w=>`<span>${esc(w)}</span>`).join("")}</div>
+  <h3>More Like This</h3>
+  ${recs.length?recs.map(r=>`<div class="rec" onclick="openMovie(${r.movie.id})"><div class="thumb" style="background:${bg(r.movie)}"></div>
+    <div><b>${esc(r.movie.title)}</b><small>${esc(r.movie.genre)} &middot; ${r.movie.rating.toFixed(1)}</small></div><div class="sc">Similarity<br>Score: ${r.score}</div></div>`).join(""):`<p class="empty">No similar movies found.</p>`}
+  </div>`);
+}
+function openAdd(){
+  showModal(`<div class="mb" style="padding-top:24px"><button class="x" onclick="closeModal()" aria-label="Close">&times;</button><h2 style="margin:0">Add New Movie</h2>
+  <label>Movie ID</label><input class="in" id="a_id" type="number" value="${Math.max(0,...movies.map(m=>m.id))+1}">
+  <label>Title</label><input class="in" id="a_t">
+  <label>Genre</label><input class="in" id="a_g" placeholder="Sci-Fi, Action, Drama...">
+  <label>Description keywords</label><input class="in" id="a_d" placeholder="space time travel science">
+  <label>Rating (0-10)</label><input class="in" id="a_r" type="number" step="0.1" min="0" max="10">
+  <p><button class="btn w" onclick="addMovie()">Add Movie</button></p></div>`);
+}
+function addMovie(){
+  const m={id:parseInt($("a_id").value),title:$("a_t").value.trim(),genre:$("a_g").value.trim(),description:$("a_d").value.trim(),rating:parseFloat($("a_r").value)};
+  if(Number.isNaN(m.id))return toast("Enter a valid ID",1);
+  if(movieIndex.has(m.id))return toast("Movie ID already exists!",1);
+  if(Number.isNaN(m.rating)||m.rating<0||m.rating>10)return toast("Invalid rating!",1);
+  if(!m.title||!m.genre)return toast("Title and genre cannot be empty!",1);
+  movies.push(m);rebuildIndex();closeModal();render();toast("Movie added successfully!");
+}
+
+/* ===== Watch ===== */
+function watch(id){
+  if(!movieIndex.has(id))return toast("Movie not found!",1);
+  const m=movies[movieIndex.get(id)];watchHistory.push(m.title);
+  closeModal();toast("Now Watching: "+m.title);if(view==="home"||view==="history")render();
+}
+
+/* ===== Save / Load (same movies.txt format as the C++ program) ===== */
+function saveMovies(){
+  const txt=movies.map(m=>`${m.id}\n${m.title}\n${m.genre}\n${m.description}\n${m.rating}\n`).join("");
+  try{localStorage.setItem("movies.txt",txt);}catch(e){}
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([txt],{type:"text/plain"}));a.download="movies.txt";a.click();
+  toast("Movies saved successfully!");
+}
+function parseDb(txt){
+  const L=txt.split(/\r?\n/),out=[];let i=0;
+  while(i<L.length){
+    if(L[i].trim()===""){i++;continue;}
+    if(i+4>=L.length)throw "Invalid movie database format!";
+    const m={id:parseInt(L[i]),title:L[i+1],genre:L[i+2],description:L[i+3],rating:parseFloat(L[i+4])};
+    if([m.id,m.rating].some(Number.isNaN)||L[i+4]===undefined)throw "Invalid movie database format!";
+    if(m.rating<0||m.rating>10)throw "Invalid rating in database!";
+    out.push(m);i+=5;
+  }
+  return out;
+}
+function applyDb(txt){
+  try{movies=parseDb(txt);rebuildIndex();heroId=null;render();toast("Movies loaded successfully!");}
+  catch(e){toast(String(e),1);}
+}
+function loadMovies(){
+  let saved=null;try{saved=localStorage.getItem("movies.txt");}catch(e){}
+  if(saved){applyDb(saved);return;}
+  $("file").click();
+}
+$("file").onchange=e=>{const f=e.target.files[0];if(!f)return;f.text().then(applyDb);e.target.value="";};
+
+addEventListener("scroll",()=>$("nav").classList.toggle("solid",scrollY>40));
+addEventListener("keydown",e=>{if(e.key==="Escape")closeModal();});
+rebuildIndex();render();
+</script>
+</body>
+</html>
